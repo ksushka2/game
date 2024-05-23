@@ -1,0 +1,200 @@
+#Управление: вправо, влево - стрелки; прыжок - пробел
+#Пули - B английская
+import pygame
+
+# Константы
+SCREEN_WIDTH = 750
+SCREEN_HEIGHT = 422
+PLAYER_SPEED = 5
+JUMP_HEIGHT = 8
+BULLET_SPEED = 4
+GHOST_SPEED = 10
+ANIMATION_SPEED = 13  # FPS
+
+# Инициализация Pygame
+pygame.init()
+clock = pygame.time.Clock()
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption('PaP')
+icon = pygame.image.load('png/icon.png')
+pygame.display.set_icon(icon)
+bg_sound = pygame.mixer.Sound('soundgame/gamesound.mp3')
+bg_sound.play()
+
+# Классы
+class Player:
+    def __init__(self):
+        self.images_right = [
+            pygame.image.load('png/право1/право1-no-bg-preview (carve.photos).png').convert_alpha(),
+            pygame.image.load('png/право1/право2-no-bg-preview (carve.photos).png').convert_alpha(),
+            pygame.image.load('png/право1/право3-no-bg-preview (carve.photos).png').convert_alpha(),
+            pygame.image.load('png/право1/право4-no-bg-preview (carve.photos).png').convert_alpha()
+        ]
+        self.images_left = [
+            pygame.image.load('png/лево1/лево1-no-bg-preview (carve.photos).png').convert_alpha(),
+            pygame.image.load('png/лево1/лево2-no-bg-preview (carve.photos).png').convert_alpha(),
+            pygame.image.load('png/лево1/лево3-no-bg-preview (carve.photos).png').convert_alpha(),
+            pygame.image.load('png/лево1/лево4-no-bg-preview (carve.photos).png').convert_alpha()
+        ]
+        self.x = 150
+        self.y = 270
+        self.width = self.images_right[0].get_width()
+        self.height = self.images_right[0].get_height()
+        self.anim_count = 0
+        self.jump = False
+        self.jump_count = JUMP_HEIGHT
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.direction = 'right'  # Изначально игрок смотрит вправо
+
+    def draw(self, screen):
+        if self.direction == 'right':
+            images = self.images_right
+        else:
+            images = self.images_left
+
+        if self.anim_count >= len(images):
+            self.anim_count = 0
+
+        screen.blit(images[self.anim_count], (self.x, self.y))
+        self.anim_count += 1
+
+    def update(self, keys):
+        if keys[pygame.K_LEFT] and self.x > 50:
+            self.x -= PLAYER_SPEED
+            self.direction = 'left'  # Игрок движется влево
+        elif keys[pygame.K_RIGHT] and self.x < 200:
+            self.x += PLAYER_SPEED
+            self.direction = 'right'  # Игрок движется вправо
+
+
+        if not self.jump:
+            if keys[pygame.K_SPACE]:
+                self.jump = True
+        else:
+            if self.jump_count >= -JUMP_HEIGHT:
+                neg = 1
+                if self.jump_count < 0:
+                    neg = -1
+                self.y -= (self.jump_count ** 2) * 0.5 * neg
+                self.jump_count -= 1
+            else:
+                self.jump = False
+                self.jump_count = JUMP_HEIGHT
+
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+class Ghost:
+    def __init__(self, x, y):
+        self.image = pygame.image.load('png/призраак-no-bg-preview (carve.photos).png')
+        self.rect = self.image.get_rect(topleft=(x, y))
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+    def update(self):
+        self.rect.x -= GHOST_SPEED
+
+class Bullet:
+    def __init__(self, x, y):
+        self.image = pygame.image.load('png/паааатрон-no-bg-preview (carve.photos).png')
+        self.rect = self.image.get_rect(topleft=(x, y))
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+    def update(self):
+        self.rect.x += BULLET_SPEED
+
+class Game:
+    def __init__(self):
+        self.bg = pygame.image.load('png/yjhvajy.png').convert()
+        self.bg_x = 0
+        self.player = Player()
+        self.ghosts = []
+        self.bullets = []
+        self.ghost_timer = pygame.USEREVENT + 1
+        pygame.time.set_timer(self.ghost_timer, 4000)
+        self.font = pygame.font.Font('шрифт/shrift.ttf', 40)
+        self.running = True
+        self.game_active = True
+
+
+    def run(self):
+        while self.running:
+            self.events()
+            self.update()
+            self.draw()
+            clock.tick(ANIMATION_SPEED)
+
+    def events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == self.ghost_timer:
+                self.ghosts.append(Ghost(755, 290))
+            if self.game_active and event.type == pygame.KEYUP and event.key == pygame.K_b:
+                self.bullets.append(Bullet(self.player.x + 30, self.player.y + 30))
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        self.player.update(keys)
+
+        for ghost in self.ghosts:
+            ghost.update()
+            if ghost.rect.x < -ghost.rect.width:
+                self.ghosts.remove(ghost)
+            if self.player.rect.colliderect(ghost.rect):
+                self.game_active = False
+
+        for bullet in self.bullets:
+            bullet.update()
+            if bullet.rect.x > SCREEN_WIDTH:
+                self.bullets.remove(bullet)
+            for ghost in self.ghosts:
+                if bullet.rect.colliderect(ghost.rect):
+                    self.ghosts.remove(ghost)
+                    self.bullets.remove(bullet)
+                    break
+
+        self.bg_x -= 2
+        if self.bg_x <= -SCREEN_WIDTH:
+            self.bg_x = 0
+
+    def draw(self):
+        if self.game_active:
+            screen.blit(self.bg, (self.bg_x, 0))
+            screen.blit(self.bg, (self.bg_x + SCREEN_WIDTH, 0))
+            self.player.draw(screen)
+            for ghost in self.ghosts:
+                ghost.draw(screen)
+            for bullet in self.bullets:
+                bullet.draw(screen)
+        else:
+            self.draw_game_over()
+
+        pygame.display.update()
+
+    def draw_game_over(self):
+        lose_text = self.font.render('Game over!', False, (127, 3, 3))
+        restart_text = self.font.render('Restart', False, (80, 23, 23))
+        restart_rect = restart_text.get_rect(topleft=(420, 200))
+        screen.fill((232, 164, 164))
+        screen.blit(lose_text, (180, 100))
+        screen.blit(restart_text, restart_rect)
+
+        mouse = pygame.mouse.get_pos()
+        if restart_rect.collidepoint(mouse) and pygame.mouse.get_pressed()[0]:
+            self.reset_game()
+
+    def reset_game(self):
+        self.game_active = True
+        self.player.x = 150
+        self.ghosts.clear()
+        self.bullets.clear()
+
+# Создание экземпляра игры и её запуск
+if __name__ == "__main__":
+    game = Game()
+    game.run()
+
+    pygame.quit()
