@@ -546,7 +546,7 @@ class Board:
                 return min_eval, best_start[0], best_start[1], best_move[0], best_move[1]
 
         # Вызываем minimax с глубиной 3 (можно настроить для разных уровней сложности)
-        _, start_row, start_col, end_row, end_col = minimax(self.board, 4, float('-inf'), float('inf'), True)
+        _, start_row, start_col, end_row, end_col = minimax(self.board, 5, float('-inf'), float('inf'), True)
 
         if start_row is not None and end_row is not None:
             checker = self.board[start_row][start_col]
@@ -623,7 +623,7 @@ class Game:
         self.moves_scroll_y = 0
         self.max_visible_moves = 15  # Максимальное количество видимых ходов
         self.scroll_speed = 25  # Скорость скролла
-        self.moves_area_height = 400  # Высота области для истории ходов
+        self.moves_area_height = 550  # Высота области для истории ходов
 
     def add_move_to_history(self, start_pos, end_pos, player):
         # Преобразуем координаты в шахматную нотацию
