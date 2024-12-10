@@ -29,9 +29,9 @@ class LoginScreen:
         self.game_started = False
         self.success_popup_start_time = 0
 
-        self.username_rect = pygame.Rect(window_size_w // 2 - 100, 150, 200, 30)
-        self.password_rect = pygame.Rect(window_size_w // 2 - 100, 250, 200, 30)
-        self.login_btn = pygame.Rect(window_size_w // 2 - 50, 330, 100, 40)
+        self.username_rect = pygame.Rect(window_size_w // 2 - 100, 230, 200, 30)
+        self.password_rect = pygame.Rect(window_size_w // 2 - 100, 330, 200, 30)
+        self.login_btn = pygame.Rect(window_size_w // 2 - 50, 410, 100, 40)
 
         self.popup_rect = pygame.Rect(window_size_w // 2 - 200, window_size_h // 2 - 100, 400, 200)
         self.yes_btn = pygame.Rect(window_size_w // 2 - 100, window_size_h // 2 + 20, 80, 40)
@@ -128,11 +128,11 @@ class LoginScreen:
 
         header_text = "Регистрация" if self.is_registration else "Авторизация"
         header = self.font_header.render(header_text, True, black)
-        header_rect = header.get_rect(center=(window_size_w // 2, 80))
+        header_rect = header.get_rect(center=(window_size_w // 2, 160))
         self.screen.blit(header, header_rect)
 
         username_label = self.font_label.render("Имя пользователя", True, black)
-        self.screen.blit(username_label, (window_size_w // 2 - 100, 120))
+        self.screen.blit(username_label, (window_size_w // 2 - 100, 200))
 
         pygame.draw.rect(self.screen, gray if self.active_input == "username" else black,
                          self.username_rect, 2)
@@ -140,7 +140,7 @@ class LoginScreen:
         self.screen.blit(username_text, (self.username_rect.x + 5, self.username_rect.y + 5))
 
         password_label = self.font_label.render("Пароль", True, black)
-        self.screen.blit(password_label, (window_size_w // 2 - 100, 220))
+        self.screen.blit(password_label, (window_size_w // 2 - 100, 300))
 
         pygame.draw.rect(self.screen, gray if self.active_input == "password" else black,
                          self.password_rect, 2)
@@ -272,6 +272,18 @@ class Board:
         self.init_board()
         self.last_move = None
 
+        # Переносим матрицу весов из Game в Board
+        self.weight_pole = [
+            [7, 6, 5, 4, 3, 2, 1, 0],
+            [8, 7, 6, 5, 4, 3, 2, 1],
+            [9, 8, 7, 6, 5, 4, 3, 2],
+            [10, 9, 8, 7, 6, 5, 4, 3],
+            [11, 10, 9, 8, 7, 6, 5, 4],
+            [14, 14, 14, 9, 8, 7, 6, 5],
+            [14, 14, 14, 10, 9, 8, 7, 6],
+            [14, 14, 14, 11, 10, 9, 8, 7]
+        ]
+
     def init_board(self):
         initial_position = [
             [0, 0, 0, 0, 0, -1, -1, -1],
@@ -290,73 +302,87 @@ class Board:
                     self.board[row][col] = Checker(row, col, initial_position[row][col], self.game)
 
     def check_winner(self):
-        # Проверка победы белых (достигли верхнего правого угла)
-        white_win = (self.board[0][5] is not None and self.board[0][5].player == 1 and
-                     self.board[0][6] is not None and self.board[0][6].player == 1 and
-                     self.board[0][7] is not None and self.board[0][7].player == 1 and
-                     self.board[1][5] is not None and self.board[1][5].player == 1 and
-                     self.board[1][6] is not None and self.board[1][6].player == 1 and
-                     self.board[1][7] is not None and self.board[1][7].player == 1 and
-                     self.board[2][5] is not None and self.board[2][5].player == 1 and
-                     self.board[2][6] is not None and self.board[2][6].player == 1 and
-                     self.board[2][7] is not None and self.board[2][7].player == 1)
+        # Проверка победы белых (достигли правого верхнего угла)
+        white_win = True
+        for row in range(3):
+            for col in range(5, 8):
+                if not self.board[row][col] or self.board[row][col].player != 1:
+                    white_win = False
+                    break
+            if not white_win:
+                break
 
-        # Проверка победы черных (достигли нижнего левого угла)
-        black_win = (self.board[5][0] is not None and self.board[5][0].player == -1 and
-                     self.board[5][1] is not None and self.board[5][1].player == -1 and
-                     self.board[5][2] is not None and self.board[5][2].player == -1 and
-                     self.board[6][0] is not None and self.board[6][0].player == -1 and
-                     self.board[6][1] is not None and self.board[6][1].player == -1 and
-                     self.board[6][2] is not None and self.board[6][2].player == -1 and
-                     self.board[7][0] is not None and self.board[7][0].player == -1 and
-                     self.board[7][1] is not None and self.board[7][1].player == -1 and
-                     self.board[7][2] is not None and self.board[7][2].player == -1)
+        # Проверка победы черных (достигли левого нижнего угла)
+        black_win = True
+        for row in range(5, 8):
+            for col in range(3):
+                if not self.board[row][col] or self.board[row][col].player != -1:
+                    black_win = False
+                    break
+            if not black_win:
+                break
 
-        if white_win and black_win:
-            return 0  # Ничья
-        elif white_win:
+        if white_win:
             return 1  # Победа белых
         elif black_win:
             return -1  # Победа черных
-        else:
-            return 0  # Игра не окончена
+        return 0  # Игра продолжается
 
     def get_path(self, start_row, start_col, end_row, end_col):
         path = [(start_row, start_col)]
-        current_row, current_col = start_row, start_col
+        visited = set()
+        found_path = []
 
+        def find_jump_path(x, y, target_x, target_y, current_path):
+            nonlocal found_path
+
+            if found_path:  # Если путь уже найден, прекращаем поиск
+                return
+
+            if (x, y) == (target_x, target_y):
+                found_path = current_path.copy()
+                return
+
+            visited.add((x, y))
+
+            for dx, dy in [(0, -2), (-2, 0), (0, 2), (2, 0)]:
+                new_x = x + dx
+                new_y = y + dy
+
+                if (0 <= new_x < board_size and 0 <= new_y < board_size and
+                        (new_x, new_y) not in visited):
+
+                    middle_x = x + dx // 2
+                    middle_y = y + dy // 2
+
+                    if (self.board[middle_x][middle_y] is not None and
+                            self.board[new_x][new_y] is None):
+
+                        current_path.append((new_x, new_y))
+                        find_jump_path(new_x, new_y, target_x, target_y, current_path)
+                        if not found_path:
+                            current_path.pop()
+
+            visited.remove((x, y))
+
+        # Если это простой ход на одну клетку
         if abs(start_row - end_row) + abs(start_col - end_col) == 1:
             path.append((end_row, end_col))
             return path
 
-        while (current_row, current_col) != (end_row, end_col):
-            if abs(current_row - end_row) >= 2:
-                next_row = current_row + 2 * (1 if end_row > current_row else -1)
-                next_col = current_col
-                if self.can_jump(current_row, current_col, next_row, next_col):
-                    path.append((next_row, next_col))
-                    current_row = next_row
-                    continue
-
-            if abs(current_col - end_col) >= 2:
-                next_row = current_row
-                next_col = current_col + 2 * (1 if end_col > current_col else -1)
-                if self.can_jump(current_row, current_col, next_row, next_col):
-                    path.append((next_row, next_col))
-                    current_col = next_col
-                    continue
-
-            break
-
-        return path
+        # Ищем путь через прыж��и
+        find_jump_path(start_row, start_col, end_row, end_col, path)
+        return found_path if found_path else path
 
     def can_jump(self, start_row, start_col, end_row, end_col):
+        # Проверяем возможность прыжка между двумя позициями
         if self.board[end_row][end_col] is not None:
             return False
 
         if not (start_row == end_row or start_col == end_col):
             return False
 
+        # Проверяем наличие шашки для перепрыгивания
         if start_row == end_row:
             mid_col = (start_col + end_col) // 2
             return (abs(start_col - end_col) == 2 and
@@ -371,21 +397,57 @@ class Board:
             visited = set()
 
         possible_moves = set()
-        directions = [(0, -2), (0, 2), (-2, 0), (2, 0)]
 
-        for d_row, d_col in directions:
+        def test_jump(x, y, target_x, target_y, visited_positions):
+            # Если позиция уже была посещена, пропускаем
+            if (x, y) not in visited_positions:
+                visited_positions.add((x, y))
+
+            # Если достигли целевой позиции, добавляем её в возможные ходы
+            if (x, y) != (row, col):
+                possible_moves.add((x, y))
+
+            # Проверяем все возможные направления прыжка
+            for dx, dy in [(0, -2), (-2, 0), (0, 2), (2, 0)]:
+                new_x = x + dx
+                new_y = y + dy
+
+                # Проверяем, что новая позиция в пределах доски
+                if 0 <= new_x < board_size and 0 <= new_y < board_size:
+                    # Проверяем наличие шашки для перепрыгивания и пустую целевую клетку
+                    middle_x = x + dx // 2
+                    middle_y = y + dy // 2
+
+                    if (self.board[middle_x][middle_y] is not None and  # есть шашка для прыжка
+                            self.board[new_x][new_y] is None and  # целевая клетка пуста
+                            (new_x, new_y) not in visited_positions):  # не были там раньше
+
+                        # Рекурсивно проверяем следующие прыжки
+                        test_jump(new_x, new_y, target_x, target_y, visited_positions)
+
+        # Запускаем поиск возможных прыжков
+        test_jump(row, col, None, None, visited)
+
+        return possible_moves
+
+    def get_possible_moves(self, row, col):
+        moves = set()
+
+        # Простые ходы на 1 клетку
+        for d_row, d_col in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
             new_row = row + d_row
             new_col = col + d_col
 
-            if (0 <= new_row < board_size and 0 <= new_col < board_size and
-                    (new_row, new_col) not in visited and
-                    self.can_jump(row, col, new_row, new_col)):
-                possible_moves.add((new_row, new_col))
-                visited.add((new_row, new_col))
-                next_jumps = self.get_possible_jumps(new_row, new_col, visited)
-                possible_moves.update(next_jumps)
+            if (0 <= new_row < board_size and
+                    0 <= new_col < board_size and
+                    self.board[new_row][new_col] is None):
+                moves.add((new_row, new_col))
 
-        return possible_moves
+        # Добавляем все возможные прыжки
+        jumps = self.get_possible_jumps(row, col)
+        moves.update(jumps)
+
+        return moves
 
     def draw(self, possible_moves):
         self.game.screen.fill(white)
@@ -411,42 +473,54 @@ class Board:
                 if self.board[row][col]:
                     self.board[row][col].draw()
 
-    def get_possible_moves(self, row, col):
-        moves = set()
-
-        for d_row, d_col in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            new_row = row + d_row
-            new_col = col + d_col
-            if (0 <= new_row < board_size and
-                    0 <= new_col < board_size and
-                    self.board[new_row][new_col] is None):
-                moves.add((new_row, new_col))
-
-        jumps = self.get_possible_jumps(row, col)
-        moves.update(jumps)
-
-        return moves
-
     def make_computer_move(self):
         if self.game.animating:
             return False
 
         def minimax(board, depth, alpha, beta, maximizing_player):
+            # Проверяем победу
+            winner = self.check_winner()
+            if winner == -1:  # Победа черных
+                return float('inf'), None, None, None, None
+            elif winner == 1:  # Победа белых
+                return float('-inf'), None, None, None, None
+
             if depth == 0:
-                # Оцениваем состояние доски используя матрицу весов
                 score = 0
+                black_in_target = 0
+
+                # Оцениваем позицию на основе весовой матрицы
                 for row in range(board_size):
                     for col in range(board_size):
-                        if board[row][col] and board[row][col].player == -1:
-                            score += self.game.weight_pole[row][col]
-                        elif board[row][col] and board[row][col].player == 1:
-                            score -= self.game.weight_pole[row][col]
+                        if board[row][col]:
+                            if board[row][col].player == -1:
+                                # Для черных шашек важны клетки со значением 14
+                                if self.weight_pole[row][col] == 14:
+                                    score += 1000  # Большой бонус за занятие клетки со значением 14
+                                    black_in_target += 1
+                                else:
+                                    # Для остальных клеток используем значения из матрицы
+                                    score += self.weight_pole[row][col] * 10
+                            else:
+                                # Штраф за белые шашки на важных позициях
+                                if self.weight_pole[row][col] == 14:
+                                    score -= 500
+                                else:
+                                    score -= self.weight_pole[row][col] * 5
+
+                # Бонус за количество шашек в целевой области
+                if black_in_target >= 6:
+                    score *= 2
+                if black_in_target >= 8:
+                    score *= 3
+
                 return score, None, None, None, None
 
             if maximizing_player:
                 max_eval = float('-inf')
                 best_move = None
                 best_start = None
+                moves_found = False  # Флаг для проверки наличия ходов
 
                 # Получаем все возможные ходы для черных фигур
                 for row in range(board_size):
@@ -455,6 +529,7 @@ class Board:
                             possible_moves = self.get_possible_moves(row, col)
 
                             for new_row, new_col in possible_moves:
+                                moves_found = True  # Нашли хотя бы один ход
                                 # Делаем ход
                                 temp = board[new_row][new_col]
                                 board[new_row][new_col] = board[row][col]
@@ -475,12 +550,21 @@ class Board:
                                 if beta <= alpha:
                                     break
 
+                # Если не нашли ни одного хода
+                if not moves_found:
+                    return float('-inf'), None, None, None, None
+
+                # Проверяем, что нашли ход
+                if best_start is None or best_move is None:
+                    return float('-inf'), None, None, None, None
+
                 return max_eval, best_start[0], best_start[1], best_move[0], best_move[1]
 
             else:
                 min_eval = float('inf')
                 best_move = None
                 best_start = None
+                moves_found = False
 
                 # Получаем все возможные ходы для белых фигур
                 for row in range(board_size):
@@ -489,14 +573,13 @@ class Board:
                             possible_moves = self.get_possible_moves(row, col)
 
                             for new_row, new_col in possible_moves:
-                                # Делаем ход
+                                moves_found = True
                                 temp = board[new_row][new_col]
                                 board[new_row][new_col] = board[row][col]
                                 board[row][col] = None
 
                                 eval, _, _, _, _ = minimax(board, depth - 1, alpha, beta, True)
 
-                                # Отменяем ход
                                 board[row][col] = board[new_row][new_col]
                                 board[new_row][new_col] = temp
 
@@ -509,23 +592,31 @@ class Board:
                                 if beta <= alpha:
                                     break
 
+                if not moves_found:
+                    return float('inf'), None, None, None, None
+
+                if best_start is None or best_move is None:
+                    return float('inf'), None, None, None, None
+
                 return min_eval, best_start[0], best_start[1], best_move[0], best_move[1]
 
-        # Вызываем minimax с глубиной 3 (можно настроить для разных уровней сложности)
-        _, start_row, start_col, end_row, end_col = minimax(self.board, 4, float('-inf'), float('inf'), True)
+        # Получаем ход и проверяем его валидность
+        eval_score, start_row, start_col, end_row, end_col = minimax(self.board, 3, float('-inf'), float('inf'), True)
+        
+        if None in (start_row, start_col, end_row, end_col):
+            return False
 
-        if start_row is not None and end_row is not None:
-            checker = self.board[start_row][start_col]
-            path = self.get_path(start_row, start_col, end_row, end_col)
+        checker = self.board[start_row][start_col]
+        path = self.get_path(start_row, start_col, end_row, end_col)
 
-            if path:
-                checker.start_animation(path)
-                self.game.animating = True
-                self.board[start_row][start_col] = None
-                self.board[end_row][end_col] = checker
-                checker.move(end_row, end_col)
-                self.last_move = ((start_row, start_col), (end_row, end_col))
-                return True
+        if path:
+            checker.start_animation(path)
+            self.game.animating = True
+            self.board[start_row][start_col] = None
+            self.board[end_row][end_col] = checker
+            checker.move(end_row, end_col)
+            self.last_move = ((start_row, start_col), (end_row, end_col))
+            return True
 
         return False
 
@@ -559,17 +650,6 @@ class Game:
         self.login_screen = LoginScreen(self.screen)
         self.logged_in = False
 
-        self.weight_pole = [
-            [7, 6, 5, 4, 3, 2, 1, 0],
-            [8, 7, 6, 5, 4, 3, 2, 1],
-            [9, 8, 7, 6, 5, 4, 3, 2],
-            [10, 9, 8, 7, 6, 5, 4, 3],
-            [11, 10, 9, 8, 7, 6, 5, 4],
-            [12, 11, 10, 9, 8, 7, 6, 5],
-            [13, 12, 11, 10, 9, 8, 7, 6],
-            [14, 13, 12, 11, 10, 9, 8, 7]
-        ]
-
         self.RULES_TEXT = """
         Правила игры Халма:
 
@@ -585,6 +665,12 @@ class Game:
         self.col_to_letter = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H'}
         self.row_to_number = {0: '8', 1: '7', 2: '6', 3: '5', 4: '4', 5: '3', 6: '2', 7: '1'}
 
+        # Добавляем параметры для скролла
+        self.moves_scroll_y = 0
+        self.max_visible_moves = 15  # Максимальное количество видимых ходов
+        self.scroll_speed = 25  # Скорость скролла
+        self.moves_area_height = 550  # Высота области для истории ходов
+
     def add_move_to_history(self, start_pos, end_pos, player):
         # Преобразуем координаты в шахматную нотацию
         start_notation = f"{self.col_to_letter[start_pos[1]]}{self.row_to_number[start_pos[0]]}"
@@ -599,34 +685,89 @@ class Game:
         self.screen.blit(white_header, (20, 20))
         self.screen.blit(black_header, (200, 20))
 
-        # Отрисовка истории ходов
-        white_y = 60
-        black_y = 60
+        # Создаем поверхность с учетом всей истории ходов
+        total_height = max(self.moves_area_height, len(self.moves_history) * 25)
+        moves_surface = pygame.Surface((350, total_height))
+        moves_surface.fill(white)
+
+        # Отрисовка истории ходов на поверхности
+        white_y = 0
+        black_y = 0
+
         for move_text, player in self.moves_history:
             text = self.moves_font.render(move_text, True, black)
             if player == 1:  # белые
-                self.screen.blit(text, (20, white_y))
+                moves_surface.blit(text, (0, white_y))
                 white_y += 25
             else:  # черные
-                self.screen.blit(text, (200, black_y))
+                moves_surface.blit(text, (180, black_y))
                 black_y += 25
 
+        # Вычисляем максимальную высоту контента
+        content_height = max(white_y, black_y)
+
+        # Автоматически прокручиваем к новым ходам
+        if content_height > self.moves_area_height:
+            target_scroll = content_height - self.moves_area_height
+            # Плавно приближаем текущий скролл к целевому
+            self.moves_scroll_y += (target_scroll - self.moves_scroll_y) * 0.1
+
+        # Отображаем видимую часть истории
+        visible_rect = pygame.Rect(0, self.moves_scroll_y, 350, self.moves_area_height)
+        self.screen.blit(moves_surface, (20, 60), visible_rect)
+
+        # Отрисовка полосы прокрутки только если есть что прокручивать
+        if content_height > self.moves_area_height:
+            # Вычисляем размер и позицию ползунка
+            scroll_height = max(30, self.moves_area_height * self.moves_area_height / content_height)
+            scroll_pos = (self.moves_scroll_y * (self.moves_area_height - scroll_height) /
+                          (content_height - self.moves_area_height))
+
+            # Фон полосы прокрутки
+            pygame.draw.rect(self.screen, (200, 200, 200),
+                             (380, 60, 10, self.moves_area_height))
+
+            # Ползунок
+            pygame.draw.rect(self.screen, (150, 150, 150),
+                             (380, 60 + scroll_pos, 10, scroll_height))
+
+    def handle_scroll(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            content_height = len(self.moves_history) * 25
+            if content_height > self.moves_area_height:
+                if event.button == 4:  # Прокрутка вверх (к старым ходам)
+                    self.moves_scroll_y = max(0, self.moves_scroll_y - self.scroll_speed)
+                elif event.button == 5:  # Прокрутка вниз (к новым ходам)
+                    max_scroll = content_height - self.moves_area_height
+                    self.moves_scroll_y = min(max_scroll, self.moves_scroll_y + self.scroll_speed)
+
     def show_winner_dialog(self):
-        dialog_width = 300
-        dialog_height = 150
+        # Затемняем фон
+        overlay = pygame.Surface((window_size_w, window_size_h))
+        overlay.fill((0, 0, 0))
+        overlay.set_alpha(128)
+        self.screen.blit(overlay, (0, 0))
+
+        dialog_width = 400
+        dialog_height = 200
         dialog_x = (window_size_w - dialog_width) // 2
         dialog_y = (window_size_h - dialog_height) // 2
 
+        # Рисуем диалоговое окно
         dialog_rect = pygame.Rect(dialog_x, dialog_y, dialog_width, dialog_height)
         pygame.draw.rect(self.screen, white, dialog_rect)
         pygame.draw.rect(self.screen, black, dialog_rect, 2)
 
-        winner_text = "Победил игрок: " + ("белые" if self.winner == 1 else "черные")
+        # Текст победителя
+        winner_text = "Победили белые!" if self.winner == 1 else "Победили черные!"
         text = self.font.render(winner_text, True, black)
-        text_rect = text.get_rect(center=(window_size_w // 2, dialog_y + 45))
+        text_rect = text.get_rect(center=(window_size_w // 2, dialog_y + 60))
         self.screen.blit(text, text_rect)
 
-        ok_button = pygame.Rect(dialog_x + 110, dialog_y + 100, 80, 30)
+        # Кнопка OK
+        ok_button = pygame.Rect(dialog_x + (dialog_width - 100) // 2,
+                                dialog_y + dialog_height - 60,
+                                100, 40)
         pygame.draw.rect(self.screen, gray, ok_button)
         ok_text = self.font.render("OK", True, black)
         ok_rect = ok_text.get_rect(center=ok_button.center)
@@ -754,12 +895,9 @@ class Game:
         pygame.draw.rect(self.screen, white, dialog_rect)
         pygame.draw.rect(self.screen, black, dialog_rect, 2)
 
-        text = self.font.render("Вы хотите закрыть игру", True, black)
-        text2 = self.font.render("без сохранения?", True, black)
-        text_rect = text.get_rect(center=(window_size_w // 2, dialog_y + 30))
-        text2_rect = text2.get_rect(center=(window_size_w // 2, dialog_y + 60))
+        text = self.font.render("Хотите закрыть игру?", True, black)
+        text_rect = text.get_rect(center=(window_size_w // 2, dialog_y + 60))
         self.screen.blit(text, text_rect)
-        self.screen.blit(text2, text2_rect)
 
         yes_button = pygame.Rect(dialog_x + 50, dialog_y + 100, 80, 30)
         no_button = pygame.Rect(dialog_x + 170, dialog_y + 100, 80, 30)
@@ -784,6 +922,27 @@ class Game:
         while True:
             self.clock.tick(fps)
 
+            # Проверяем победителя после каждого хода
+            winner = self.board.check_winner()
+            if winner != 0:
+                self.winner = winner
+                self.show_winner_popup = True
+
+            if self.show_winner_popup:
+                ok_button = self.show_winner_dialog()
+                pygame.display.flip()
+
+                # Ожидаем клик по кнопке OK
+                waiting_for_ok = True
+                while waiting_for_ok:
+                    for event in pygame.event.get():
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            if ok_button.collidepoint(event.pos):
+                                return  # Возвращаемся в главное меню
+                        elif event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+
             if self.current_player == -1 and self.is_computer_player and not self.animating:
                 if self.board.make_computer_move():
                     # Добавляем ход компьютера в историю
@@ -797,6 +956,9 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+
+                # Добавляем обработку скролла
+                self.handle_scroll(event)
 
                 if event.type == pygame.MOUSEBUTTONDOWN and not self.animating:
                     mouse_pos = event.pos
@@ -872,12 +1034,12 @@ class Game:
 
         player_text = f"Ходят: {'белые' if self.current_player == 1 else 'черные'}"
         text_surface = self.font.render(player_text, True, black)
-        text_rect = text_surface.get_rect(center=(window_size_w // 2, window_size_h - 30))
+        text_rect = text_surface.get_rect(center=(window_size_w - 320, window_size_h - 30))
         self.screen.blit(text_surface, text_rect)
 
         if self.error_message and self.error_timer > 0:
             error_surface = self.font.render(self.error_message, True, (77, 19, 19))
-            error_rect = error_surface.get_rect(center=(window_size_w // 2, window_size_h - 60))
+            error_rect = error_surface.get_rect(center=(window_size_w - 320, window_size_h - 60))
             self.screen.blit(error_surface, error_rect)
             self.error_timer -= 1
 
