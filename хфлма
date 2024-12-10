@@ -370,7 +370,7 @@ class Board:
             path.append((end_row, end_col))
             return path
 
-        # Ищем путь через прыж��и
+        # Ищем путь через прыжки
         find_jump_path(start_row, start_col, end_row, end_col, path)
         return found_path if found_path else path
 
@@ -625,11 +625,20 @@ class Game:
 
     def __init__(self):
         pygame.init()
+        # Инициализируем микшер для музыки
+        pygame.mixer.init()
+
         self.screen = pygame.display.set_mode((window_size_w, window_size_h))
         pygame.display.set_caption("Халма")
 
-        icon = pygame.image.load("new_icon.png")
+        # Устанавливаем иконку приложения
+        icon = pygame.image.load("icon.png")
         pygame.display.set_icon(icon)
+
+        # Загружаем и настраиваем фоновую музыку
+        pygame.mixer.music.load('Музыка, которая означает, что в жизни всё хорошо.mp3')
+        pygame.mixer.music.set_volume(0.5)  # Устанавливаем громкость на 50%
+        pygame.mixer.music.play(-1)  # -1 означает бесконечное воспроизведение
 
         self.clock = pygame.time.Clock()
 
@@ -831,6 +840,7 @@ class Game:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    pygame.mixer.music.stop()  # Останавливаем музыку при выходе
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -840,6 +850,7 @@ class Game:
                             self.screen.fill(white)
                             for event in pygame.event.get():
                                 if event.type == pygame.QUIT:
+                                    pygame.mixer.music.stop()  # Останавливаем музыку при выходе
                                     pygame.quit()
                                     sys.exit()
                                 self.login_screen.handle_event(event)
@@ -944,6 +955,7 @@ class Game:
                             if ok_button.collidepoint(event.pos):
                                 return  # Возвращаемся в главное меню
                         elif event.type == pygame.QUIT:
+                            pygame.mixer.music.stop()  # Останавливаем музыку при выходе
                             pygame.quit()
                             sys.exit()
 
@@ -958,6 +970,7 @@ class Game:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    pygame.mixer.music.stop()  # Останавливаем музыку при выходе
                     pygame.quit()
                     sys.exit()
 
