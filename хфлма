@@ -272,6 +272,18 @@ class Board:
         self.init_board()
         self.last_move = None
 
+        # Переносим матрицу весов из Game в Board
+        self.weight_pole = [
+            [7, 6, 5, 4, 3, 2, 1, 0],
+            [8, 7, 6, 5, 4, 3, 2, 1],
+            [9, 8, 7, 6, 5, 4, 3, 2],
+            [10, 9, 8, 7, 6, 5, 4, 3],
+            [11, 10, 9, 8, 7, 6, 5, 4],
+            [14, 14, 14, 9, 8, 7, 6, 5],
+            [14, 14, 14, 10, 9, 8, 7, 6],
+            [14, 14, 14, 11, 10, 9, 8, 7]
+        ]
+
     def init_board(self):
         initial_position = [
             [0, 0, 0, 0, 0, -1, -1, -1],
@@ -358,7 +370,7 @@ class Board:
             path.append((end_row, end_col))
             return path
 
-        # Ищем путь через прыжки
+        # Ищем путь через прыж��и
         find_jump_path(start_row, start_col, end_row, end_col, path)
         return found_path if found_path else path
 
@@ -466,21 +478,49 @@ class Board:
             return False
 
         def minimax(board, depth, alpha, beta, maximizing_player):
+            # Проверяем победу
+            winner = self.check_winner()
+            if winner == -1:  # Победа черных
+                return float('inf'), None, None, None, None
+            elif winner == 1:  # Победа белых
+                return float('-inf'), None, None, None, None
+
             if depth == 0:
-                # Оцениваем состояние доски используя матрицу весов
                 score = 0
+                black_in_target = 0
+
+                # Оцениваем позицию на основе весовой матрицы
                 for row in range(board_size):
                     for col in range(board_size):
-                        if board[row][col] and board[row][col].player == -1:
-                            score += self.game.weight_pole[row][col]
-                        elif board[row][col] and board[row][col].player == 1:
-                            score -= self.game.weight_pole[row][col]
+                        if board[row][col]:
+                            if board[row][col].player == -1:
+                                # Для черных шашек важны клетки со значением 14
+                                if self.weight_pole[row][col] == 14:
+                                    score += 1000  # Большой бонус за занятие клетки со значением 14
+                                    black_in_target += 1
+                                else:
+                                    # Для остальных клеток используем значения из матрицы
+                                    score += self.weight_pole[row][col] * 10
+                            else:
+                                # Штраф за белые шашки на важных позициях
+                                if self.weight_pole[row][col] == 14:
+                                    score -= 500
+                                else:
+                                    score -= self.weight_pole[row][col] * 5
+
+                # Бонус за количество шашек в целевой области
+                if black_in_target >= 6:
+                    score *= 2
+                if black_in_target >= 8:
+                    score *= 3
+
                 return score, None, None, None, None
 
             if maximizing_player:
                 max_eval = float('-inf')
                 best_move = None
                 best_start = None
+                moves_found = False  # Флаг для проверки наличия ходов
 
                 # Получаем все возможные ходы для черных фигур
                 for row in range(board_size):
@@ -489,6 +529,7 @@ class Board:
                             possible_moves = self.get_possible_moves(row, col)
 
                             for new_row, new_col in possible_moves:
+                                moves_found = True  # Нашли хотя бы один ход
                                 # Делаем ход
                                 temp = board[new_row][new_col]
                                 board[new_row][new_col] = board[row][col]
@@ -509,12 +550,21 @@ class Board:
                                 if beta <= alpha:
                                     break
 
+                # Если не нашли ни одного хода
+                if not moves_found:
+                    return float('-inf'), None, None, None, None
+
+                # Проверяем, что нашли ход
+                if best_start is None or best_move is None:
+                    return float('-inf'), None, None, None, None
+
                 return max_eval, best_start[0], best_start[1], best_move[0], best_move[1]
 
             else:
                 min_eval = float('inf')
                 best_move = None
                 best_start = None
+                moves_found = False
 
                 # Получаем все возможные ходы для белых фигур
                 for row in range(board_size):
@@ -523,14 +573,13 @@ class Board:
                             possible_moves = self.get_possible_moves(row, col)
 
                             for new_row, new_col in possible_moves:
-                                # Делаем ход
+                                moves_found = True
                                 temp = board[new_row][new_col]
                                 board[new_row][new_col] = board[row][col]
                                 board[row][col] = None
 
                                 eval, _, _, _, _ = minimax(board, depth - 1, alpha, beta, True)
 
-                                # Отменяем ход
                                 board[row][col] = board[new_row][new_col]
                                 board[new_row][new_col] = temp
 
@@ -543,23 +592,31 @@ class Board:
                                 if beta <= alpha:
                                     break
 
+                if not moves_found:
+                    return float('inf'), None, None, None, None
+
+                if best_start is None or best_move is None:
+                    return float('inf'), None, None, None, None
+
                 return min_eval, best_start[0], best_start[1], best_move[0], best_move[1]
 
-        # Вызываем minimax с глубиной 3 (можно настроить для разных уровней сложности)
-        _, start_row, start_col, end_row, end_col = minimax(self.board, 5, float('-inf'), float('inf'), True)
+        # Получаем ход и проверяем его валидность
+        eval_score, start_row, start_col, end_row, end_col = minimax(self.board, 3, float('-inf'), float('inf'), True)
 
-        if start_row is not None and end_row is not None:
-            checker = self.board[start_row][start_col]
-            path = self.get_path(start_row, start_col, end_row, end_col)
+        if None in (start_row, start_col, end_row, end_col):
+            return False
 
-            if path:
-                checker.start_animation(path)
-                self.game.animating = True
-                self.board[start_row][start_col] = None
-                self.board[end_row][end_col] = checker
-                checker.move(end_row, end_col)
-                self.last_move = ((start_row, start_col), (end_row, end_col))
-                return True
+        checker = self.board[start_row][start_col]
+        path = self.get_path(start_row, start_col, end_row, end_col)
+
+        if path:
+            checker.start_animation(path)
+            self.game.animating = True
+            self.board[start_row][start_col] = None
+            self.board[end_row][end_col] = checker
+            checker.move(end_row, end_col)
+            self.last_move = ((start_row, start_col), (end_row, end_col))
+            return True
 
         return False
 
@@ -570,6 +627,10 @@ class Game:
         pygame.init()
         self.screen = pygame.display.set_mode((window_size_w, window_size_h))
         pygame.display.set_caption("Халма")
+
+        icon = pygame.image.load("new_icon.png")
+        pygame.display.set_icon(icon)
+
         self.clock = pygame.time.Clock()
 
         self.desk_img = pygame.image.load("desk.jpg")
@@ -592,17 +653,6 @@ class Game:
         self.winner = 0
         self.login_screen = LoginScreen(self.screen)
         self.logged_in = False
-
-        self.weight_pole = [
-            [7, 6, 5, 4, 3, 2, 1, 0],
-            [8, 7, 6, 5, 4, 3, 2, 1],
-            [9, 8, 7, 6, 5, 4, 3, 2],
-            [10, 9, 8, 7, 6, 5, 4, 3],
-            [11, 10, 9, 8, 7, 6, 5, 4],
-            [12, 11, 10, 9, 8, 7, 6, 5],
-            [13, 12, 11, 10, 9, 8, 7, 6],
-            [14, 13, 12, 11, 10, 9, 8, 7]
-        ]
 
         self.RULES_TEXT = """
         Правила игры Халма:
@@ -993,7 +1043,7 @@ class Game:
 
         if self.error_message and self.error_timer > 0:
             error_surface = self.font.render(self.error_message, True, (77, 19, 19))
-            error_rect = error_surface.get_rect(center=(window_size_w // 2, window_size_h - 60))
+            error_rect = error_surface.get_rect(center=(window_size_w - 320, window_size_h - 60))
             self.screen.blit(error_surface, error_rect)
             self.error_timer -= 1
 
