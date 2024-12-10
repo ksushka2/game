@@ -370,7 +370,7 @@ class Board:
             path.append((end_row, end_col))
             return path
 
-        # Ищем путь через прыжки
+        # Ищем путь через прыж��и
         find_jump_path(start_row, start_col, end_row, end_col, path)
         return found_path if found_path else path
 
@@ -674,7 +674,7 @@ class Game:
         """
 
         self.moves_history = []
-        self.moves_font = pygame.font.SysFont('Arial', 16)
+        self.moves_font = pygame.font.SysFont('Arial', 22)
         self.col_to_letter = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H'}
         self.row_to_number = {0: '8', 1: '7', 2: '6', 3: '5', 4: '4', 5: '3', 6: '2', 7: '1'}
 
@@ -691,6 +691,29 @@ class Game:
         move_text = f"{start_notation} → {end_notation}"
         self.moves_history.append((move_text, player))
 
+    def handle_scroll(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            content_height = len(self.moves_history) * 35  # Используем новую высоту строки
+
+            # Проверяем, есть ли что прокручивать
+            if content_height > self.moves_area_height:
+                # Проверяем клик по полосе прокрутки
+                scroll_bar_rect = pygame.Rect(380, 60, 10, self.moves_area_height)
+
+                if scroll_bar_rect.collidepoint(event.pos):
+                    # Прямой клик по полосе прокрутки
+                    relative_y = event.pos[1] - 60
+                    scroll_ratio = relative_y / self.moves_area_height
+                    self.moves_scroll_y = min(content_height - self.moves_area_height,
+                                              max(0, int(content_height * scroll_ratio)))
+                else:
+                    # Прокрутка колесиком мыши
+                    if event.button == 4:  # Колесико вверх
+                        self.moves_scroll_y = max(0, self.moves_scroll_y - self.scroll_speed)
+                    elif event.button == 5:  # Колесико вниз
+                        max_scroll = content_height - self.moves_area_height
+                        self.moves_scroll_y = min(max_scroll, self.moves_scroll_y + self.scroll_speed)
+
     def draw_moves_history(self):
         # Заголовки колонок
         white_header = self.font.render("Ходы белых", True, black)
@@ -699,7 +722,7 @@ class Game:
         self.screen.blit(black_header, (200, 20))
 
         # Создаем поверхность с учетом всей истории ходов
-        total_height = max(self.moves_area_height, len(self.moves_history) * 25)
+        total_height = max(self.moves_area_height, len(self.moves_history) * 35)  # Увеличиваем высоту для каждой строки
         moves_surface = pygame.Surface((350, total_height))
         moves_surface.fill(white)
 
@@ -711,19 +734,18 @@ class Game:
             text = self.moves_font.render(move_text, True, black)
             if player == 1:  # белые
                 moves_surface.blit(text, (0, white_y))
-                white_y += 25
+                white_y += 35
             else:  # черные
                 moves_surface.blit(text, (180, black_y))
-                black_y += 25
+                black_y += 35
 
         # Вычисляем максимальную высоту контента
         content_height = max(white_y, black_y)
 
-        # Автоматически прокручиваем к новым ходам
+        # Ограничиваем скролл
         if content_height > self.moves_area_height:
-            target_scroll = content_height - self.moves_area_height
-            # Плавно приближаем текущий скролл к целевому
-            self.moves_scroll_y += (target_scroll - self.moves_scroll_y) * 0.1
+            self.moves_scroll_y = min(content_height - self.moves_area_height,
+                                      max(0, self.moves_scroll_y))
 
         # Отображаем видимую часть истории
         visible_rect = pygame.Rect(0, self.moves_scroll_y, 350, self.moves_area_height)
@@ -743,16 +765,6 @@ class Game:
             # Ползунок
             pygame.draw.rect(self.screen, (150, 150, 150),
                              (380, 60 + scroll_pos, 10, scroll_height))
-
-    def handle_scroll(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            content_height = len(self.moves_history) * 25
-            if content_height > self.moves_area_height:
-                if event.button == 4:  # Прокрутка вверх (к старым ходам)
-                    self.moves_scroll_y = max(0, self.moves_scroll_y - self.scroll_speed)
-                elif event.button == 5:  # Прокрутка вниз (к новым ходам)
-                    max_scroll = content_height - self.moves_area_height
-                    self.moves_scroll_y = min(max_scroll, self.moves_scroll_y + self.scroll_speed)
 
     def show_winner_dialog(self):
         # Затемняем фон
