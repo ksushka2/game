@@ -40,11 +40,11 @@ class LoginScreen:
     def caesar_cipher(self, text, shift=6):
         result = ""
         for char in text:
-            if 'А' <= char <= 'Я' or 'а' <= char <= 'я':  # Русский алфавит
+            if 'А' <= char <= 'Я' or 'а' <= char <= 'я':
                 ascii_offset = ord('а') if char.islower() else ord('А')
                 shifted = (ord(char) - ascii_offset + shift) % 32 + ascii_offset
                 result += chr(shifted)
-            elif 'A' <= char <= 'Z' or 'a' <= char <= 'z':  # Английский алфавит
+            elif 'A' <= char <= 'Z' or 'a' <= char <= 'z':
                 ascii_offset = ord('a') if char.islower() else ord('A')
                 shifted = (ord(char) - ascii_offset + shift) % 26 + ascii_offset
                 result += chr(shifted)
@@ -273,8 +273,6 @@ class Board:
     def __init__(self, game):
         self.game = game
         self.reset_board()
-
-        # Переносим матрицу весов из Game в Board
         self.weight_pole = [
             [7, 6, 5, 4, 3, 2, 1, 0],
             [8, 7, 6, 5, 4, 3, 2, 1],
@@ -287,7 +285,6 @@ class Board:
         ]
 
     def reset_board(self):
-        """Сбрасывает доску в начальное состояние"""
         self.board = [[None for _ in range(board_size)] for _ in range(board_size)]
         self.init_board()
         self.last_move = None
@@ -310,7 +307,6 @@ class Board:
                     self.board[row][col] = Checker(row, col, initial_position[row][col], self.game)
 
     def check_winner(self):
-        # Проверка победы белых (достигли правого верхнего угла)
         white_win = True
         for row in range(3):
             for col in range(5, 8):
@@ -320,7 +316,6 @@ class Board:
             if not white_win:
                 break
 
-        # Проверка победы черных (достигли левого нижнего угла)
         black_win = True
         for row in range(5, 8):
             for col in range(3):
@@ -331,10 +326,10 @@ class Board:
                 break
 
         if white_win:
-            return 1  # Победа белых
+            return 1
         elif black_win:
-            return -1  # Победа черных
-        return 0  # Игра продолжается
+            return -1
+        return 0
 
     def get_path(self, start_row, start_col, end_row, end_col):
         path = [(start_row, start_col)]
@@ -344,7 +339,7 @@ class Board:
         def find_jump_path(x, y, target_x, target_y, current_path):
             nonlocal found_path
 
-            if found_path:  # Если путь уже найден, прекращаем поиск
+            if found_path:
                 return
 
             if (x, y) == (target_x, target_y):
@@ -373,24 +368,20 @@ class Board:
 
             visited.remove((x, y))
 
-        # Если это простой ход на одну клетку
         if abs(start_row - end_row) + abs(start_col - end_col) == 1:
             path.append((end_row, end_col))
             return path
 
-        # Ищем путь через прыжки
         find_jump_path(start_row, start_col, end_row, end_col, path)
         return found_path if found_path else path
 
     def can_jump(self, start_row, start_col, end_row, end_col):
-        # Проверяем возможность прыжка между двум по��ициями
         if self.board[end_row][end_col] is not None:
             return False
 
         if not (start_row == end_row or start_col == end_col):
             return False
 
-        # Проверяем наличие шашки для перепрыгивания
         if start_row == end_row:
             mid_col = (start_col + end_col) // 2
             return (abs(start_col - end_col) == 2 and
@@ -407,33 +398,26 @@ class Board:
         possible_moves = set()
 
         def test_jump(x, y, target_x, target_y, visited_positions):
-            # Если позиция уже была посещена, пропускаем
             if (x, y) not in visited_positions:
                 visited_positions.add((x, y))
 
-            # Если достигли целевой позиции, добавляем её в возможные ходы
             if (x, y) != (row, col):
                 possible_moves.add((x, y))
 
-            # Проверям все возможные направления ��рыжка
             for dx, dy in [(0, -2), (-2, 0), (0, 2), (2, 0)]:
                 new_x = x + dx
                 new_y = y + dy
 
-                # Проверяем, что новая позиция в пределах доски
                 if 0 <= new_x < board_size and 0 <= new_y < board_size:
-                    # Проверяем наличие шашки для перепрыгивания и пустую целевую клетку
                     middle_x = x + dx // 2
                     middle_y = y + dy // 2
 
-                    if (self.board[middle_x][middle_y] is not None and  # есть шашка для прыжка
-                            self.board[new_x][new_y] is None and  # целевая клетка пуста
-                            (new_x, new_y) not in visited_positions):  # не были там раньше
+                    if (self.board[middle_x][middle_y] is not None and
+                            self.board[new_x][new_y] is None and
+                            (new_x, new_y) not in visited_positions):
 
-                        # Рекурсивно проверяем следующие прыжки
                         test_jump(new_x, new_y, target_x, target_y, visited_positions)
 
-        # Запускаем поиск возможных прыжков
         test_jump(row, col, None, None, visited)
 
         return possible_moves
@@ -441,7 +425,6 @@ class Board:
     def get_possible_moves(self, row, col):
         moves = set()
 
-        # Простые ходы на 1 клетку
         for d_row, d_col in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
             new_row = row + d_row
             new_col = col + d_col
@@ -451,7 +434,6 @@ class Board:
                     self.board[new_row][new_col] is None):
                 moves.add((new_row, new_col))
 
-        # Добавляем все возможные прыжки
         jumps = self.get_possible_jumps(row, col)
         moves.update(jumps)
 
@@ -486,49 +468,39 @@ class Board:
             return False
 
         def minimax(board, depth, alpha, beta, maximizing_player):
-            # Проверяем победителя
             winner = self.check_winner()
-            if winner == -1:  # Победа черных
+            if winner == -1:
                 return float('inf'), None, None, None, None
-            elif winner == 1:  # Победа белых
+            elif winner == 1:
                 return float('-inf'), None, None, None, None
 
-            # Добавляем проверку на возможность победы за один ход для черных
             if maximizing_player:
-                # Проверяем каждую черную шашку
                 for row in range(board_size):
                     for col in range(board_size):
                         if board[row][col] and board[row][col].player == -1:
                             possible_moves = self.get_possible_moves(row, col)
-                            
-                            # Проверяем, приведет ли какой-либо ход к победе
+
                             for new_row, new_col in possible_moves:
-                                # Временно делаем ход
                                 temp = board[new_row][new_col]
                                 board[new_row][new_col] = board[row][col]
                                 board[row][col] = None
-                                
-                                # Проверяем, привел ли этот ход к победе
+
                                 if self.check_winner() == -1:
-                                    # Возвращаем ход назад
                                     board[row][col] = board[new_row][new_col]
                                     board[new_row][new_col] = temp
-                                    # Возвращаем этот победный ход с максимальной оценкой
                                     return float('inf'), row, col, new_row, new_col
-                                
-                                # Возвращаем ход назад
+
                                 board[row][col] = board[new_row][new_col]
                                 board[new_row][new_col] = temp
 
             if depth == 0:
                 score = 0
-                # Упрощенная оценка позиции только на основе матрицы весов
                 for row in range(board_size):
                     for col in range(board_size):
                         if board[row][col]:
-                            if board[row][col].player == -1:  # Черные шашки
+                            if board[row][col].player == -1:
                                 score += self.weight_pole[row][col]
-                            else:  # Белые шашки
+                            else:
                                 score -= self.weight_pole[7-row][7-col]
                 return score, None, None, None, None
 
@@ -538,17 +510,15 @@ class Board:
                 best_start = None
                 moves_found = False
 
-                # Перебираем все возможные ходы черных
                 for row in range(board_size):
                     for col in range(board_size):
                         if board[row][col] and board[row][col].player == -1:
                             possible_moves = self.get_possible_moves(row, col)
-                            
-                            # Если шашка уже в целевой зоне 3x3, ограничиваем её ходы только внутри зоны
-                            if row >= 5 and col <= 2:  # Если шашка в целевой зоне
+
+                            if row >= 5 and col <= 2:
                                 filtered_moves = set()
                                 for new_row, new_col in possible_moves:
-                                    if new_row >= 5 and new_col <= 2:  # Проверяем, что ход остается в зоне 3x3
+                                    if new_row >= 5 and new_col <= 2:
                                         filtered_moves.add((new_row, new_col))
                                 possible_moves = filtered_moves
 
@@ -629,10 +599,8 @@ class Board:
 
                 return min_eval, best_start[0], best_start[1], best_move[0], best_move[1]
 
-        # Получаем ход и проверяем его валидность
         eval_score, start_row, start_col, end_row, end_col = minimax(self.board, 3, float('-inf'), float('inf'), True)
 
-        # Если нет возможных ходов, возвращаем False
         if None in (start_row, start_col, end_row, end_col):
             return False
 
@@ -657,21 +625,17 @@ class Game:
 
     def __init__(self):
         pygame.init()
-        # Инициализируем микшер для музыки
         pygame.mixer.init()
 
         self.screen = pygame.display.set_mode((window_size_w, window_size_h))
         pygame.display.set_caption("Халма")
 
-        # Устанавливаем иконку приложения
         icon = pygame.image.load("new_icon.png")
         pygame.display.set_icon(icon)
 
-        # Загружаем и настраиваем фоновую музыку
         pygame.mixer.music.load('Музыка, которая означает, что в жизни всё хорошо.mp3')
-        pygame.mixer.music.set_volume(0.01)  # Устанавливаем громкость на 50%
-        pygame.mixer.music.play(-1)  # -1 означает бесконечное воспроизведение
-
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
         self.clock = pygame.time.Clock()
 
         self.desk_img = pygame.image.load("desk.jpg")
@@ -701,14 +665,14 @@ class Game:
 
    У каждого игрока по 9 шашек: белые внизу слева, черные вверху справа.
 
-   Игроки ходят по оереди. Возможные ходы:
+   Игроки ходят по очереди. Возможные ходы:
    - На одну клетку вправо, влево, вниз, вверх.
    - Прыгать через шашки на пустую клетку.
 
    За ход можно сделать несколько прыжков, как через свои, так и через
    шашки противника.
 
-   Победает тот, кто первый переместит свои шашки в угол противника.
+   Побеждает тот, кто первый переместит свои шашки в угол противника.
 
    Совет: используйте шашки как мостики для прыжков!
 
@@ -719,14 +683,12 @@ class Game:
         self.col_to_letter = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H'}
         self.row_to_number = {0: '8', 1: '7', 2: '6', 3: '5', 4: '4', 5: '3', 6: '2', 7: '1'}
 
-        # Добавляем параметры для скролла
         self.moves_scroll_y = 0
-        self.max_visible_moves = 15  # Максимальное количество видимых ходов
-        self.scroll_speed = 25  # Скорость скролла
-        self.moves_area_height = 550  # Высота области для истории ходов
+        self.max_visible_moves = 15
+        self.scroll_speed = 25
+        self.moves_area_height = 550
 
     def add_move_to_history(self, start_pos, end_pos, player):
-        # Преобразуем координаты в шахматную нотацию
         start_notation = f"{self.col_to_letter[start_pos[1]]}{self.row_to_number[start_pos[0]]}"
         end_notation = f"{self.col_to_letter[end_pos[1]]}{self.row_to_number[end_pos[0]]}"
         move_text = f"{start_notation} → {end_notation}"
@@ -734,81 +696,66 @@ class Game:
 
     def handle_scroll(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            content_height = len(self.moves_history) * 35  # Используем новую высоту строки
+            content_height = len(self.moves_history) * 35
 
-            # Проверяем, есть ли что прокручивать
             if content_height > self.moves_area_height:
-                # Проверяем клик по полосе прокрутки
                 scroll_bar_rect = pygame.Rect(380, 60, 10, self.moves_area_height)
 
                 if scroll_bar_rect.collidepoint(event.pos):
-                    # Прямой клик по полосе прокрутки
                     relative_y = event.pos[1] - 60
                     scroll_ratio = relative_y / self.moves_area_height
                     self.moves_scroll_y = min(content_height - self.moves_area_height,
                                               max(0, int(content_height * scroll_ratio)))
                 else:
-                    # Пркрутка колесико мыши
-                    if event.button == 4:  # Колесико вверх
+                    if event.button == 4:
                         self.moves_scroll_y = max(0, self.moves_scroll_y - self.scroll_speed)
-                    elif event.button == 5:  # Колесико вниз
+                    elif event.button == 5:
                         max_scroll = content_height - self.moves_area_height
                         self.moves_scroll_y = min(max_scroll, self.moves_scroll_y + self.scroll_speed)
 
     def draw_moves_history(self):
-        # Заголовки колонок
         white_header = self.font.render("Ходы белых", True, black)
         black_header = self.font.render("Ходы черных", True, black)
         self.screen.blit(white_header, (20, 20))
         self.screen.blit(black_header, (200, 20))
 
-        # Создаем поверхность с учетом всей истории ходов
-        total_height = max(self.moves_area_height, len(self.moves_history) * 35)  # Увеличиваем высоту для каждой строки
+        total_height = max(self.moves_area_height, len(self.moves_history) * 35)
         moves_surface = pygame.Surface((350, total_height))
         moves_surface.fill(white)
 
-        # Отрисовка истории ходов на поверхности
         white_y = 0
         black_y = 0
 
         for move_text, player in self.moves_history:
             text = self.moves_font.render(move_text, True, black)
-            if player == 1:  # белые
+            if player == 1:
                 moves_surface.blit(text, (0, white_y))
                 white_y += 35
-            else:  # черные
+            else:
                 moves_surface.blit(text, (180, black_y))
                 black_y += 35
 
-        # Вычисляем максимальную высоту контента
         content_height = max(white_y, black_y)
 
-        # Огран��чваем скролл
         if content_height > self.moves_area_height:
             self.moves_scroll_y = min(content_height - self.moves_area_height,
                                       max(0, self.moves_scroll_y))
 
-        # Отображаем видимую часть истории
         visible_rect = pygame.Rect(0, self.moves_scroll_y, 350, self.moves_area_height)
         self.screen.blit(moves_surface, (20, 60), visible_rect)
 
-        # Отрисовка полосы прокрутки только если есть что прокручивать
         if content_height > self.moves_area_height:
-            # Вычисляем размер и позицию ползунка
             scroll_height = max(30, self.moves_area_height * self.moves_area_height / content_height)
             scroll_pos = (self.moves_scroll_y * (self.moves_area_height - scroll_height) /
                           (content_height - self.moves_area_height))
 
-            # Фон полосы прокрутки
             pygame.draw.rect(self.screen, (200, 200, 200),
                              (380, 60, 10, self.moves_area_height))
 
-            # Ползунок
             pygame.draw.rect(self.screen, (150, 150, 150),
                              (380, 60 + scroll_pos, 10, scroll_height))
 
     def show_winner_dialog(self):
-        # Затемняем фон
         overlay = pygame.Surface((window_size_w, window_size_h))
         overlay.fill((0, 0, 0))
         overlay.set_alpha(128)
@@ -819,21 +766,16 @@ class Game:
         dialog_x = (window_size_w - dialog_width) // 2
         dialog_y = (window_size_h - dialog_height) // 2
 
-        # Рисуем диалоговое окно
         dialog_rect = pygame.Rect(dialog_x, dialog_y, dialog_width, dialog_height)
         pygame.draw.rect(self.screen, white, dialog_rect)
         pygame.draw.rect(self.screen, black, dialog_rect, 2)
 
-        # Текст победителя
         winner_text = "Победили белые!" if self.winner == 1 else "Победили чрные!"
         text = self.font.render(winner_text, True, black)
         text_rect = text.get_rect(center=(window_size_w // 2, dialog_y + 60))
         self.screen.blit(text, text_rect)
 
-        # Кнопка OK
-        ok_button = pygame.Rect(dialog_x + (dialog_width - 100) // 2,
-                                dialog_y + dialog_height - 60,
-                                100, 40)
+        ok_button = pygame.Rect(dialog_x + (dialog_width - 100) // 2, dialog_y + dialog_height - 60, 100, 40)
         pygame.draw.rect(self.screen, gray, ok_button)
         ok_text = self.font.render("OK", True, black)
         ok_rect = ok_text.get_rect(center=ok_button.center)
@@ -842,7 +784,6 @@ class Game:
         return ok_button
 
     def wrap_text(self, text, font, max_width):
-        """Разбивает текст на строки, соблюдая максимальную ширину"""
         words = text.split(' ')
         lines = []
         current_line = []
@@ -866,31 +807,27 @@ class Game:
 
     def show_rules(self):
         rules_running = True
-        padding = 50  # Отступ от краев экрана
-        line_spacing = 40  # Расстояние между строками
-        max_width = window_size_w - (padding * 2)  # Максимальная ширина текста
+        padding = 50
+        line_spacing = 40
+        max_width = window_size_w - (padding * 2)
 
         while rules_running:
             self.screen.fill(white)
 
-            # Разбиваем текст правил на строки с учетом переноса
             y = padding
             for line in self.RULES_TEXT.split('\n'):
-                if line.strip():  # Пропускаем пустые строки
-                    # Если строка начинается с цифры (пункт правил), не разбиваем её
+                if line.strip():
                     if line.strip()[0].isdigit():
                         text_surface = self.font.render(line, True, black)
                         self.screen.blit(text_surface, (padding, y))
                         y += line_spacing
                     else:
-                        # Разбиваем длинные строки
                         wrapped_lines = self.wrap_text(line, self.font, max_width)
                         for wrapped_line in wrapped_lines:
                             text_surface = self.font.render(wrapped_line, True, black)
                             self.screen.blit(text_surface, (padding, y))
                             y += line_spacing
 
-            # Кнопка "Назад"
             back_button = pygame.Rect(window_size_w // 2 - 50, window_size_h - 100, 100, 40)
             pygame.draw.rect(self.screen, gray, back_button)
             back_text = self.font.render("Назад", True, black)
@@ -918,7 +855,7 @@ class Game:
             pygame.draw.rect(self.screen, gray, start_button)
             pygame.draw.rect(self.screen, gray, rules_button)
 
-            start_text = self.font.render("Начать гру", True, black)
+            start_text = self.font.render("Начать игру", True, black)
             rules_text = self.font.render("Правила игры", True, black)
 
             start_text_rect = start_text.get_rect(center=start_button.center)
@@ -931,7 +868,7 @@ class Game:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.mixer.music.stop()  # Останавливаем музыку при выходе
+                    pygame.mixer.music.stop()
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -941,7 +878,7 @@ class Game:
                             self.screen.fill(white)
                             for event in pygame.event.get():
                                 if event.type == pygame.QUIT:
-                                    pygame.mixer.music.stop()  # Останавливаем музыку при выходе
+                                    pygame.mixer.music.stop()
                                     pygame.quit()
                                     sys.exit()
                                 self.login_screen.handle_event(event)
@@ -958,7 +895,6 @@ class Game:
                         self.show_rules()
 
     def reset_game_state(self):
-        """Сбрасывает состояние игры в начальное"""
         self.board.reset_board()
         self.selected_checker = None
         self.possible_moves = set()
@@ -1001,21 +937,19 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if computer_button.collidepoint(event.pos):
                         self.is_computer_player = True
-                        self.reset_game_state()  # Сброс состояния при выборе режима
+                        self.reset_game_state()
                         return True
                     if player_button.collidepoint(event.pos):
                         self.is_computer_player = False
-                        self.reset_game_state()  # Сброс состояния при выборе режима
+                        self.reset_game_state()
                         return True
 
     def show_exit_dialog(self):
-        # Создаем затемняющий слой
         overlay = pygame.Surface((window_size_w, window_size_h))
-        overlay.fill((0, 0, 0))  # Черный цвет
-        overlay.set_alpha(128)    # Полупрозрачность (0-255)
+        overlay.fill((0, 0, 0))
+        overlay.set_alpha(128)
         self.screen.blit(overlay, (0, 0))
 
-        # Диалоговое окно
         dialog_width = 300
         dialog_height = 150
         dialog_x = (window_size_w - dialog_width) // 2
@@ -1052,7 +986,6 @@ class Game:
         while True:
             self.clock.tick(fps)
 
-            # Проверяем победителя после каждого хода
             winner = self.board.check_winner()
             if winner != 0:
                 self.winner = winner
@@ -1062,15 +995,14 @@ class Game:
                 ok_button = self.show_winner_dialog()
                 pygame.display.flip()
 
-                # Ожидаем клик по кнопке OK
                 waiting_for_ok = True
                 while waiting_for_ok:
                     for event in pygame.event.get():
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             if ok_button.collidepoint(event.pos):
-                                self.reset_game_state()  # Сброс состояния при завершении игры
-                                self.show_exit_confirmation = False  # Сбрасываем флаг подтверждения выхода
-                                return  # Возвращаемся в главное меню
+                                self.reset_game_state()
+                                self.show_exit_confirmation = False
+                                return
                         elif event.type == pygame.QUIT:
                             pygame.mixer.music.stop()
                             pygame.quit()
@@ -1078,7 +1010,6 @@ class Game:
 
             if self.current_player == -1 and self.is_computer_player and not self.animating:
                 if self.board.make_computer_move():
-                    # Добавляем ход компьютера в историю
                     last_move = self.board.last_move
                     if last_move:
                         self.add_move_to_history(last_move[0], last_move[1], -1)
@@ -1087,11 +1018,10 @@ class Game:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.mixer.music.stop()  # Останавливаем музыку при выходе
+                    pygame.mixer.music.stop()
                     pygame.quit()
                     sys.exit()
 
-                # Добавляем обработку скролла
                 self.handle_scroll(event)
 
                 if event.type == pygame.MOUSEBUTTONDOWN and not self.animating:
@@ -1103,7 +1033,7 @@ class Game:
                         yes_button, no_button = self.show_exit_dialog()
                         if yes_button.collidepoint(mouse_pos):
                             self.reset_game_state()
-                            self.show_exit_confirmation = False  # Сбрасываем флаг подтверждения выхода
+                            self.show_exit_confirmation = False
                             return
                         elif no_button.collidepoint(mouse_pos):
                             self.show_exit_confirmation = False
@@ -1135,7 +1065,6 @@ class Game:
                 can_move = True
 
             if can_move:
-                # Сохраняем начальну�� позицию
                 start_pos = (self.selected_checker.row, self.selected_checker.col)
 
                 path = self.board.get_path(self.selected_checker.row, self.selected_checker.col, row, col)
@@ -1145,7 +1074,6 @@ class Game:
                 self.board.board[self.selected_checker.row][self.selected_checker.col] = None
                 self.board.board[row][col] = self.selected_checker
 
-                # Добавляем ход в историю для обоих игроков
                 self.add_move_to_history(start_pos, (row, col), self.current_player)
 
                 self.current_player = -self.current_player
